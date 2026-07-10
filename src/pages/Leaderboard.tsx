@@ -49,12 +49,13 @@ export default function Leaderboard() {
           const empAttendance = attendance.filter(a => a.userId === emp.uid && a.checkIn && !a.isLate);
           
           const score = emp.performanceScore || 0;
+          const calculatedAttendanceScore = empAttendance.length * 10;
 
           return {
             ...emp,
             tasksCompleted: empTasks.length,
             coursesCompleted: empCourses.length,
-            attendanceScore: attendanceScore,
+            attendanceScore: calculatedAttendanceScore,
             score,
             level: getLevel(score)
           };
