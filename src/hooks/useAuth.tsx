@@ -60,14 +60,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (emailOrUsername: string, password: string) => {
     const key = emailOrUsername.toLowerCase().trim();
-    const creds = VALID_CREDENTIALS[key];
+    
+    // Fetch all employees from the database
+    const emps = await getEmployees();
+    
+    // Find matching user by email or username
+    let matchedProfile = emps.find(e => 
+      e.email?.toLowerCase() === key || 
+      e.username?.toLowerCase() === key
+    );
 
-    if (!creds || creds.password !== password) {
+    // Check if user exists and password matches
+    if (!matchedProfile || matchedProfile.password !== password) {
       throw new Error('Invalid email/username or password');
     }
-
-    const emps = await getEmployees();
-    let matchedProfile = emps.find(e => e.email?.toLowerCase() === creds.email.toLowerCase());
 
     if (!matchedProfile) {
       // Self-healing: create the profile from MOCK_EMPLOYEES_DATA or default

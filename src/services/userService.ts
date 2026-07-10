@@ -94,13 +94,23 @@ export async function registerFullEmployee(emp: UserProfile, password?: string):
 }
 
 export async function uploadAvatar(uid: string, file: File): Promise<string> {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      resolve(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  });
+  const { supabase } = await import('../lib/supabase');
+  const fileExt = file.name.split('.').pop();
+  const filePath = `${uid}-${Math.random()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('profile')
+    .upload(filePath, file, { upsert: true });
+
+  if (uploadError) {
+    throw new Error(`Failed to upload avatar: ${uploadError.message}`);
+  }
+
+  const { data } = supabase.storage
+    .from('profile')
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
 }
 
 export async function addPerformancePoints(uid: string, points: number): Promise<void> {
