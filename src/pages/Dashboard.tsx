@@ -604,27 +604,27 @@ export default function Dashboard() {
                       itemStyle={{ fontWeight: 'bold', fontSize: '12px', color: '#ffffff' }}
                     />
                   </PieChart>
-                  {/* Central Balance Label */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Balance</p>
-                    <p className="text-2xl font-black text-zinc-900">
-                      {(() => {
-                        const totalUsed = (Object.values(user?.usedLeaves || {}) as number[]).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
-                        const annual = Number(user?.leaveQuotas?.annual) || 14;
-                        return Math.floor(annual - totalUsed);
-                      })()}
-                    </p>
-                    <p className="text-[10px] font-bold text-zinc-400">
-                      {(() => {
-                        const totalUsed = (Object.values(user?.usedLeaves || {}) as number[]).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
-                        const annual = Number(user?.leaveQuotas.annual) || 14;
-                        const remaining = annual - totalUsed;
-                        const hours = Number(((remaining - Math.floor(remaining)) * 8).toFixed(1));
-                        return `Days & ${hours}h`;
-                      })()}
-                    </p>
-                  </div>
                 </ResponsiveContainer>
+                {/* Central Balance Label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Balance</p>
+                  <p className="text-2xl font-black text-zinc-900">
+                    {(() => {
+                      const totalUsed = (Object.values(user?.usedLeaves || {}) as number[]).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+                      const annual = Number(user?.leaveQuotas?.annual) || 14;
+                      return Math.floor(annual - totalUsed);
+                    })()}
+                  </p>
+                  <p className="text-[10px] font-bold text-zinc-400">
+                    {(() => {
+                      const totalUsed = (Object.values(user?.usedLeaves || {}) as number[]).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+                      const annual = Number(user?.leaveQuotas?.annual) || 14;
+                      const remaining = annual - totalUsed;
+                      const hours = Number(((remaining - Math.floor(remaining)) * 8).toFixed(1));
+                      return `Days & ${hours}h`;
+                    })()}
+                  </p>
+                </div>
               </div>
             </div>
 
