@@ -107,7 +107,7 @@ export default function Dashboard() {
   // Live Performance Calculation logic (mirrors Performance page)
   const getLiveMetrics = (targetUid: string) => {
     const empAttendance = attendance.filter(a => a.userId === targetUid);
-    const empTasks = tasks.filter(t => t.userId === targetUid);
+    const empTasks = tasks.filter(t => t.assignedTo === targetUid);
     
     const totalLogs = empAttendance.length;
     const lateLogs = empAttendance.filter(a => a.isLate).length;

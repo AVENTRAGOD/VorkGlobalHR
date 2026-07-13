@@ -55,8 +55,8 @@ export default function Performance() {
       setLoading(true);
       try {
         const [attData, taskData, reviewData] = await Promise.all([
-          attendanceService.getAttendance(selectedEmp.uid),
-          taskService.getTasks(selectedEmp.uid),
+          attendanceService.getAttendance(),
+          taskService.getTasks(),
           performanceService.getPerformance(selectedEmp.uid)
         ]);
         setAttendance(attData || []);
@@ -75,15 +75,18 @@ export default function Performance() {
 
   // Dynamic Metrics Calculation
   const getMetrics = () => {
-    const totalLogs = attendance.length;
-    const lateLogs = attendance.filter(a => a.isLate).length;
+    const userAttendance = attendance.filter(a => a.userId === selectedEmp?.uid);
+    const userTasks = tasks.filter(t => t.assignedTo === selectedEmp?.uid);
+
+    const totalLogs = userAttendance.length;
+    const lateLogs = userAttendance.filter(a => a.isLate).length;
     const punctualityScore = totalLogs > 0 ? Math.max(0, Math.round(((totalLogs - lateLogs) / totalLogs) * 100)) : 0;
 
-    const totalTasks = tasks.length;
-    const finishedTasks = tasks.filter(t => t.completed).length;
+    const totalTasks = userTasks.length;
+    const finishedTasks = userTasks.filter(t => t.status === 'Completed').length;
     const efficiencyScore = totalTasks > 0 ? Math.round((finishedTasks / totalTasks) * 100) : 0;
 
-    const shiftsCompleted = attendance.filter(a => a.checkOut).length;
+    const shiftsCompleted = userAttendance.filter(a => a.checkOut).length;
     const reliabilityScore = totalLogs > 0 ? Math.round((shiftsCompleted / totalLogs) * 100) : 0;
 
     const finalScore = Math.round((punctualityScore + efficiencyScore + reliabilityScore) / 3) || 0;
@@ -106,9 +109,9 @@ export default function Performance() {
     
     const allScores = employees.map(e => {
       const empAttendance = attendance.filter(a => a.userId === e.uid);
-      const empTasks = tasks.filter(t => t.userId === e.uid);
+      const empTasks = tasks.filter(t => t.assignedTo === e.uid);
       const totalLogs = empAttendance.length;
-      const finishedTasks = empTasks.filter(t => t.completed).length;
+      const finishedTasks = empTasks.filter(t => t.status === 'Completed').length;
       const attScore = totalLogs > 0 ? Math.round((empAttendance.filter(a => !a.isLate).length / totalLogs) * 100) : 100;
       const tskScore = empTasks.length > 0 ? Math.round((finishedTasks / empTasks.length) * 100) : 100;
       return { uid: e.uid, score: Math.round((attScore + tskScore) / 2) };

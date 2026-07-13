@@ -183,9 +183,9 @@ export const mockService = {
   },
 
   // Tasks
-  getTasks: (uid: string) => {
+  getTasks: (uid?: string) => {
     const all = get<Task[]>('tasks', []);
-    return all.filter(t => t.userId === uid);
+    return uid ? all.filter(t => t.assignedTo === uid) : all;
   },
   saveTask: (task: Task) => {
     const all = get<Task[]>('tasks', []);
@@ -196,7 +196,7 @@ export const mockService = {
     const all = get<Task[]>('tasks', []);
     const index = all.findIndex(t => t.id === id);
     if (index > -1) {
-      all[index].completed = !all[index].completed;
+      all[index].status = all[index].status === 'Completed' ? 'In Progress' : 'Completed';
       save('tasks', all);
     }
   },

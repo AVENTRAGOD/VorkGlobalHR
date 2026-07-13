@@ -43,13 +43,13 @@ export default function Leaderboard() {
           attendanceService.getAttendance()
         ]);
 
-        const entries: LeaderboardEntry[] = employees.filter(e => e.role !== 'super' && e.role !== 'owner').map(emp => {
+        const entries: LeaderboardEntry[] = employees.filter(e => e.role !== 'super' && e.role !== 'owner' && e.role !== 'superadmin').map(emp => {
           const empTasks = tasks.filter(t => t.assignedTo === emp.uid && t.status === 'Completed');
           const empCourses = courses.filter(c => c.assignedTo === emp.uid && c.status === 'Completed');
           const empAttendance = attendance.filter(a => a.userId === emp.uid && a.checkIn && !a.isLate);
           
-          const score = emp.performanceScore || 0;
           const calculatedAttendanceScore = empAttendance.length * 10;
+          const score = (empTasks.length * 50) + (empCourses.length * 100) + calculatedAttendanceScore + (emp.performanceScore || 0);
 
           return {
             ...emp,
