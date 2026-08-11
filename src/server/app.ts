@@ -68,8 +68,8 @@ app.get('/api/users', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const users = await prisma.user.findMany({ orderBy: { sortOrder: 'asc' } });
     res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch users' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch users', details: err.message || String(err) });
   }
 });
 
