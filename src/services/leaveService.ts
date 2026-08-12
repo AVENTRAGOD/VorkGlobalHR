@@ -1,10 +1,11 @@
 import { LeaveRequest } from '../types';
 import { calculateLeaveDays } from '../lib/utils';
 import * as userService from './userService';
+import { apiFetch } from './apiFetch';
 
 export async function getLeaves(userId?: string): Promise<LeaveRequest[]> {
   const url = userId ? `/api/leaves?userId=${userId}` : '/api/leaves';
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error('Failed to fetch leaves');
   const leaves: LeaveRequest[] = await res.json();
   
@@ -43,25 +44,23 @@ export async function submitLeave(leave: Partial<LeaveRequest>): Promise<void> {
   const url = leave.id ? `/api/leaves/${leave.id}` : '/api/leaves';
   const method = leave.id ? 'PUT' : 'POST';
 
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newLeave)
   });
   if (!res.ok) throw new Error('Failed to submit leave');
 }
 
 export async function updateLeaveStatus(id: string, status: 'Approved' | 'Rejected', adminId: string): Promise<void> {
-  const res = await fetch(`/api/leaves/${id}`, {
+  const res = await apiFetch(`/api/leaves/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status, approvedBy: adminId })
   });
   if (!res.ok) throw new Error('Failed to update leave status');
 }
 
 export async function deleteLeave(id: string): Promise<void> {
-  const res = await fetch(`/api/leaves/${id}`, { method: 'DELETE' });
+  const res = await apiFetch(`/api/leaves/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete leave');
 }
 

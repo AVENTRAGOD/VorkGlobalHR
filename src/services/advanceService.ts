@@ -1,9 +1,10 @@
 import { AdvanceRequest } from '../types';
 import * as userService from './userService';
+import { apiFetch } from './apiFetch';
 
 export async function getAdvances(userId?: string): Promise<AdvanceRequest[]> {
   const url = userId ? `/api/advances?userId=${userId}` : '/api/advances';
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error('Failed to fetch advances');
   const advances: AdvanceRequest[] = await res.json();
   
@@ -31,9 +32,8 @@ export async function submitAdvance(advance: Partial<AdvanceRequest>): Promise<v
     createdAt: new Date().toISOString()
   };
 
-  const res = await fetch('/api/advances', {
+  const res = await apiFetch('/api/advances', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newAdvance)
   });
   if (!res.ok) throw new Error('Failed to submit advance');
@@ -46,9 +46,8 @@ export async function updateAdvanceStatus(
   employeeId?: string,
   amount?: number
 ): Promise<void> {
-  const res = await fetch(`/api/advances/${id}`, {
+  const res = await apiFetch(`/api/advances/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status, approvedBy: adminId, updatedAt: new Date().toISOString() })
   });
   if (!res.ok) throw new Error('Failed to update advance');
@@ -74,6 +73,6 @@ export async function updateAdvanceStatus(
 }
 
 export async function deleteAdvance(id: string): Promise<void> {
-  const res = await fetch(`/api/advances/${id}`, { method: 'DELETE' });
+  const res = await apiFetch(`/api/advances/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete advance');
 }

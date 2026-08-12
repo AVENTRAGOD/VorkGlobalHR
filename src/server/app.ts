@@ -1,73 +1,90 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../../api/utils/prisma.js';
 import jwt from 'jsonwebtoken';
+import { authenticateToken } from './middleware/auth.js';
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const JWT_SECRET = process.env.JWT_SECRET || "hr-pulse-secret-key-123";
+const JWT_SECRET = process.env.JWT_SECRET || 'hr-pulse-secret-key-123';
+const JWT_EXPIRES_IN = '8h'; // Token valid for 8 hours (one work day)
+
+// ─────────────────────────────────────────────────────────────
+// PUBLIC ROUTES (no auth required)
+// ─────────────────────────────────────────────────────────────
 
 // --- Health Check ---
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', database: 'connected' });
 });
 
-// --- Seed ---
-app.post('/api/seed', async (req, res) => {
+// --- Login (Bcrypt + JWT) ---
+app.post('/api/auth/login', async (req, res) => {
   try {
-    const existing = await prisma.user.count();
-    if (existing > 0) {
-      return res.status(400).json({ error: 'Database already seeded' });
+    const { emailOrUsername, password } = req.body;
+
+    if (!emailOrUsername || !password) {
+      return res.status(400).json({ error: 'Email/username and password are required' });
     }
 
-    const dinusha = await prisma.user.create({
-      data: {
-        name: 'Dinusha Pushparajah', email: 'dinushapushparajah@gmail.com', username: 'dinusha', role: 'super',
-        salaryA: 80000, epf: 6400, net: 73600, joinDate: '2026-03-01'
-      }
+    const key = String(emailOrUsername).toLowerCase().trim();
+
+    // Find user by email OR username
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: key },
+          { username: key },
+        ],
+      },
     });
 
-    const nisal = await prisma.user.create({
-      data: {
-        name: 'Nisal Sathsara', email: 'nisalsathsara@gmail.com', username: 'nisal', role: 'employee',
-        salaryA: 50000, epf: 4000, net: 46000, joinDate: '2026-05-01'
-      }
-    });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email/username or password' });
+    }
 
-    const jayaminda = await prisma.user.create({
-      data: {
-        name: 'Sasindu Jayaminda Mohotti', email: 'msjayaminda@gmail.com', username: 'jayaminda', role: 'employee',
-        salaryA: 50000, epf: 4000, net: 46000, joinDate: '2026-05-01'
-      }
-    });
+    // Verify password with bcrypt
+    if (!user.password) {
+      return res.status(401).json({ error: 'Account not set up — contact administrator' });
+    }
 
-    const janani = await prisma.user.create({
-      data: {
-        name: 'Janani Rashmika', email: 'jananirashmika@gmail.com', username: 'janani', role: 'employee',
-        salaryA: 50000, epf: 4000, net: 46000, joinDate: '2026-05-01'
-      }
-    });
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid email/username or password' });
+    }
 
-    res.json({ success: true, count: 4 });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to seed database' });
+    // Sign JWT
+    const token = jwt.sign(
+      { uid: user.uid, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    // Return token + user profile (strip the hashed password)
+    const { password: _pw, ...safeUser } = user;
+    return res.json({ token, user: safeUser });
+
+  } catch (err: any) {
+    console.error('Login error:', err?.message);
+    return res.status(500).json({ error: 'Login failed', details: err?.message });
   }
 });
 
-// --- Mock Auth ---
-app.post("/api/auth/login", (req, res) => {
-  const { email, password } = req.body;
-  const token = jwt.sign({ email, role: 'employee' }, JWT_SECRET, { expiresIn: '1h' });
-  res.json({ token });
-});
+// ─────────────────────────────────────────────────────────────
+// PROTECTED ROUTES — all routes below require a valid JWT
+// ─────────────────────────────────────────────────────────────
+app.use('/api', authenticateToken);
 
 // --- Users ---
 app.get('/api/users', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const users = await prisma.user.findMany({ orderBy: { sortOrder: 'asc' } });
-    res.json(users);
+    // Strip password hashes before sending to the client
+    const safeUsers = users.map(({ password: _pw, ...u }) => u);
+    res.json(safeUsers);
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to fetch users', details: err.message || String(err) });
   }
@@ -75,8 +92,14 @@ app.get('/api/users', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
   try {
-    const user = await prisma.user.create({ data: req.body });
-    res.json(user);
+    const data = { ...req.body };
+    // Hash password if provided in plain text
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
+    const user = await prisma.user.create({ data });
+    const { password: _pw, ...safeUser } = user;
+    res.json(safeUser);
   } catch (err) {
     res.status(500).json({ error: 'Failed to create user' });
   }
@@ -93,7 +116,7 @@ app.put('/api/users/:uid', async (req, res) => {
       'salaryA','salaryB','epf','advances','cover','intensive','travelling','net',
       'performanceScore','leaveQuotas','usedLeaves','sortOrder','bankName',
       'bankBranch','accountNo','accountHolderName','nic','address','nickname',
-      'extraDays','employmentHistory','skills','techEquipment','password'
+      'extraDays','employmentHistory','skills','techEquipment',
     ];
     for (const field of fields) {
       if (b[field] !== undefined) {
@@ -101,13 +124,19 @@ app.put('/api/users/:uid', async (req, res) => {
       }
     }
 
+    // If a new plain-text password is being set, hash it
+    if (b.password && !b.password.startsWith('$2')) {
+      updateData.password = await bcrypt.hash(b.password, 10);
+    }
+
     const user = await prisma.user.update({
       where: { uid: req.params.uid },
       data: updateData,
     });
-    res.json(user);
+    const { password: _pw, ...safeUser } = user;
+    res.json(safeUser);
   } catch (err: any) {
-    console.error("Error updating user:", err?.message);
+    console.error('Error updating user:', err?.message);
     res.status(500).json({ error: 'Failed to update user', details: err?.message });
   }
 });
@@ -265,9 +294,9 @@ app.put('/api/support/:id', async (req, res) => {
 app.get('/api/tasks', async (req, res) => {
   try {
     const { userId } = req.query;
-    const tasks = await prisma.task.findMany({ 
+    const tasks = await prisma.task.findMany({
       where: userId ? { assignedTo: String(userId) } : undefined,
-      orderBy: { createdAt: 'desc' } 
+      orderBy: { createdAt: 'desc' }
     });
     res.json(tasks);
   } catch (err) {

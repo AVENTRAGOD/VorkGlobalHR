@@ -1,8 +1,9 @@
 import { Course, CourseStatus } from '../types';
+import { apiFetch } from './apiFetch';
 
 export async function getCourses(userId?: string): Promise<Course[]> {
   const url = userId ? `/api/courses?userId=${userId}` : '/api/courses';
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error('Failed to fetch courses');
   const courses: Course[] = await res.json();
   
@@ -29,9 +30,8 @@ export async function saveCourse(course: Partial<Course>): Promise<void> {
   const url = course.id ? `/api/courses/${course.id}` : '/api/courses';
   const method = course.id ? 'PUT' : 'POST';
 
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newCourse)
   });
   if (!res.ok) throw new Error('Failed to save course');
@@ -46,15 +46,14 @@ export async function updateCourseStatus(id: string, status: CourseStatus, progr
     updates.proofUrl = proofUrl;
   }
 
-  const res = await fetch(`/api/courses/${id}`, {
+  const res = await apiFetch(`/api/courses/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates)
   });
   if (!res.ok) throw new Error('Failed to update course status');
 }
 
 export async function deleteCourse(id: string): Promise<void> {
-  const res = await fetch(`/api/courses/${id}`, { method: 'DELETE' });
+  const res = await apiFetch(`/api/courses/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete course');
 }

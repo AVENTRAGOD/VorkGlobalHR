@@ -1,7 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { UserProfile } from '../types';
-import { getEmployees, saveEmployee } from '../services/userService';
-import { MOCK_EMPLOYEES_DATA } from '../constants';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -14,127 +12,71 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const VALID_CREDENTIALS: Record<string, { password: string; email: string }> = {
-  'superadmin': { password: 'superadmin1234', email: 'superadmin@gmail.com' },
-  'superadmin@gmail.com': { password: 'superadmin1234', email: 'superadmin@gmail.com' },
-  'dinushapushparajah@gmail.com': { password: 'dinusha123', email: 'dinushapushparajah@gmail.com' },
-  'dinusha': { password: 'dinusha123', email: 'dinushapushparajah@gmail.com' },
-  'jananisaijanani9@gmail.com': { password: 'janani123', email: 'jananisaijanani9@gmail.com' },
-  'janani': { password: 'janani123', email: 'jananisaijanani9@gmail.com' },
-  'nisalsayuranga0710@gmail.com': { password: 'nisal123', email: 'nisalsayuranga0710@gmail.com' },
-  'nisal': { password: 'nisal123', email: 'nisalsayuranga0710@gmail.com' },
-  'msjayaminda@gmail.com': { password: 'jayaminda123', email: 'msjayaminda@gmail.com' },
-  'jayaminda': { password: 'jayaminda123', email: 'msjayaminda@gmail.com' }
-};
+const SESSION_KEY  = 'hr_pulse_v8_session';
+const TOKEN_KEY    = 'hr_pulse_v8_token';
+
+/** Returns the stored JWT token (used by API service layer) */
+export function getAuthToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [uid, setUid] = useState<string | null>(null);
+  const [user, setUser]       = useState<UserProfile | null>(null);
+  const [uid, setUid]         = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Restore session on page load
   useEffect(() => {
-    const init = async () => {
-      const savedSession = localStorage.getItem('hr_pulse_v8_session');
-      if (savedSession) {
-        const parsed = JSON.parse(savedSession);
-        try {
-          const emps = await getEmployees();
-          const matchedProfile = emps.find(e => e.email?.toLowerCase() === parsed.email?.toLowerCase());
-          if (matchedProfile) {
-            setUser(matchedProfile);
-            setUid(matchedProfile.uid);
-            localStorage.setItem('hr_pulse_v8_session', JSON.stringify(matchedProfile));
-          } else {
-            setUser(parsed);
-            setUid(parsed.uid);
-          }
-        } catch (err) {
-          setUser(parsed);
-          setUid(parsed.uid);
-        }
+    const savedSession = localStorage.getItem(SESSION_KEY);
+    const savedToken   = localStorage.getItem(TOKEN_KEY);
+
+    if (savedSession && savedToken) {
+      try {
+        const parsed = JSON.parse(savedSession) as UserProfile;
+        setUser(parsed);
+        setUid(parsed.uid);
+      } catch {
+        // Corrupt session — clear it
+        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(TOKEN_KEY);
       }
-      setLoading(false);
-    };
-    init();
+    }
+    setLoading(false);
   }, []);
 
-  const login = async (emailOrUsername: string, password: string) => {
-    const key = emailOrUsername.toLowerCase().trim();
-    
-    // Fetch all employees from the database
-    const emps = await getEmployees();
-    
-    // Find matching user by email or username
-    let matchedProfile = emps.find(e => 
-      e.email?.toLowerCase() === key || 
-      e.username?.toLowerCase() === key
-    );
+  const login = async (emailOrUsername: string, password: string): Promise<void> => {
+    const res = await fetch('/api/auth/login', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ emailOrUsername, password }),
+    });
 
-    // Check if user exists and password matches
-    if (!matchedProfile || matchedProfile.password !== password) {
-      throw new Error('Invalid email/username or password');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Login failed');
     }
 
-    if (!matchedProfile) {
-      // Self-healing: create the profile from MOCK_EMPLOYEES_DATA or default
-      const defaultEmp = MOCK_EMPLOYEES_DATA.find(e => e.email?.toLowerCase() === creds.email.toLowerCase());
-      if (defaultEmp) {
-        const salaryA = defaultEmp.salaryA || 0;
-        const intensive = defaultEmp.intensive || 0;
-        const travelling = defaultEmp.travelling || 0;
-        const epf = defaultEmp.epf || 0;
-        const advances = defaultEmp.advances || 0;
-        const cover = defaultEmp.cover || 0;
-        const calculatedNet = salaryA + intensive + travelling - epf - advances - cover;
+    const { token, user: profile } = await res.json();
 
-        matchedProfile = {
-          uid: `emp-${emps.length}-${Date.now()}`,
-          name: defaultEmp.name,
-          email: defaultEmp.email,
-          username: defaultEmp.username,
-          role: defaultEmp.role as any,
-          branch: defaultEmp.branch,
-          joinDate: defaultEmp.joinDate,
-          salaryA,
-          salaryB: 0,
-          epf,
-          advances,
-          cover,
-          intensive,
-          travelling,
-          net: defaultEmp.net || calculatedNet,
-          performanceScore: 90,
-          leaveQuotas: { annual: 14, sick: 7, casual: 7, short: 8 },
-          usedLeaves: { annual: 0, sick: 0, casual: 0, short: 0 },
-          sortOrder: emps.length + 1,
-          bankName: 'Demo Bank',
-          bankBranch: 'Main Branch',
-          accountNo: '123456789',
-          accountHolderName: defaultEmp.name,
-          nic: '123456789V',
-          nickname: defaultEmp.name.split(' ')[0]
-        };
-        await saveEmployee(matchedProfile);
-      } else {
-        throw new Error('Employee profile not found in database');
-      }
-    }
+    // Persist JWT + profile
+    localStorage.setItem(TOKEN_KEY,    token);
+    localStorage.setItem(SESSION_KEY,  JSON.stringify(profile));
 
-    setUser(matchedProfile);
-    setUid(matchedProfile.uid);
-    localStorage.setItem('hr_pulse_v8_session', JSON.stringify(matchedProfile));
+    setUser(profile);
+    setUid(profile.uid);
   };
 
   const logout = () => {
     setUser(null);
     setUid(null);
-    localStorage.removeItem('hr_pulse_v8_session');
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   };
 
   const updateUser = (userData: UserProfile) => {
     setUser(userData);
     setUid(userData.uid);
-    localStorage.setItem('hr_pulse_v8_session', JSON.stringify(userData));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
   };
 
   return (

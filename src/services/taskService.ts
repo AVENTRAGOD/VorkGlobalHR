@@ -1,9 +1,10 @@
 import { Task, TaskComment, TaskStatus } from '../types';
 import * as userService from './userService';
+import { apiFetch } from './apiFetch';
 
 export async function getTasks(userId?: string): Promise<Task[]> {
   const url = userId ? `/api/tasks?userId=${userId}` : '/api/tasks';
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error('Failed to fetch tasks');
   const tasks: Task[] = await res.json();
   
@@ -44,9 +45,8 @@ export async function saveTask(task: Partial<Task>): Promise<void> {
   const url = task.id ? `/api/tasks/${task.id}` : '/api/tasks';
   const method = task.id ? 'PUT' : 'POST';
 
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newTask)
   });
   if (!res.ok) throw new Error('Failed to save task');
@@ -73,9 +73,8 @@ export async function updateTaskStatus(id: string, status: TaskStatus, progressP
       updates.progressPercent = progressPercent;
     }
 
-    const res = await fetch(`/api/tasks/${id}`, {
+    const res = await apiFetch(`/api/tasks/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
     });
     if (!res.ok) throw new Error('Failed to update task status');
@@ -97,9 +96,8 @@ export async function addComment(taskId: string, comment: Omit<TaskComment, 'id'
     
     const comments = [...(task.comments || []), newComment];
     
-    const res = await fetch(`/api/tasks/${taskId}`, {
+    const res = await apiFetch(`/api/tasks/${taskId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ comments, updatedAt: new Date().toISOString() })
     });
     if (!res.ok) throw new Error('Failed to add comment');
@@ -107,6 +105,6 @@ export async function addComment(taskId: string, comment: Omit<TaskComment, 'id'
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+  const res = await apiFetch(`/api/tasks/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete task');
 }

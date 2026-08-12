@@ -1,7 +1,8 @@
 import { UserProfile } from '../types';
+import { apiFetch } from './apiFetch';
 
 export async function getEmployees(): Promise<UserProfile[]> {
-  const res = await fetch('/api/users');
+  const res = await apiFetch('/api/users');
   if (!res.ok) throw new Error('Failed to fetch employees');
   const data = await res.json();
   // Parse JSON fields
@@ -57,9 +58,8 @@ export async function saveEmployee(emp: UserProfile): Promise<void> {
     techEquipment: emp.techEquipment,
   };
 
-  const res = await fetch(`/api/users/${emp.uid}`, {
+  const res = await apiFetch(`/api/users/${emp.uid}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
   if (!res.ok) {
@@ -69,25 +69,23 @@ export async function saveEmployee(emp: UserProfile): Promise<void> {
 }
 
 export async function updateProfileStatus(uid: string, status: UserProfile['status']): Promise<void> {
-  const res = await fetch(`/api/users/${uid}`, {
+  const res = await apiFetch(`/api/users/${uid}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
   });
   if (!res.ok) throw new Error('Failed to update status');
 }
 
 export async function deleteEmployee(uid: string): Promise<void> {
-  const res = await fetch(`/api/users/${uid}`, {
+  const res = await apiFetch(`/api/users/${uid}`, {
     method: 'DELETE'
   });
   if (!res.ok) throw new Error('Failed to delete employee');
 }
 
 export async function registerFullEmployee(emp: UserProfile, password?: string): Promise<void> {
-  const res = await fetch('/api/users', {
+  const res = await apiFetch('/api/users', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(emp)
   });
   if (!res.ok) throw new Error('Failed to register employee');

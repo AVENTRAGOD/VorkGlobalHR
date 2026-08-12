@@ -1,9 +1,10 @@
 import { PayrollRecord } from '../types';
 import * as userService from './userService';
+import { apiFetch } from './apiFetch';
 
 export async function getPayroll(userId?: string): Promise<PayrollRecord[]> {
   const url = userId ? `/api/payroll?userId=${userId}` : '/api/payroll';
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error('Failed to fetch payroll');
   const payroll: PayrollRecord[] = await res.json();
   
@@ -49,9 +50,8 @@ export async function generatePayroll(month: number, year: number): Promise<void
         branch: emp.branch
       };
       
-      await fetch('/api/payroll', {
+      await apiFetch('/api/payroll', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRecord)
       });
     }
@@ -81,18 +81,16 @@ export async function savePayroll(record: Partial<PayrollRecord>): Promise<void>
   const url = record.id ? `/api/payroll/${record.id}` : '/api/payroll';
   const method = record.id ? 'PUT' : 'POST';
 
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newRecord)
   });
   if (!res.ok) throw new Error('Failed to save payroll');
 }
 
 export async function updatePayroll(id: string, updates: Partial<PayrollRecord>): Promise<void> {
-  const res = await fetch(`/api/payroll/${id}`, {
+  const res = await apiFetch(`/api/payroll/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates)
   });
   if (!res.ok) throw new Error('Failed to update payroll');

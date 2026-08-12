@@ -1,5 +1,6 @@
 import { AttendanceRecord, AttendanceSupportRequest } from '../types';
 import * as userService from './userService';
+import { apiFetch } from './apiFetch';
 
 export function getColomboTime(date: Date = new Date()): string {
   return date.toLocaleString('en-US', { timeZone: 'Asia/Colombo' });
@@ -7,7 +8,7 @@ export function getColomboTime(date: Date = new Date()): string {
 
 export async function getAttendance(userId?: string): Promise<AttendanceRecord[]> {
   const url = userId ? `/api/attendance?userId=${userId}` : '/api/attendance';
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error('Failed to fetch attendance');
   return res.json();
 }
@@ -34,9 +35,8 @@ export async function checkIn(userId: string): Promise<void> {
     status: 'Working'
   };
 
-  const res = await fetch('/api/attendance', {
+  const res = await apiFetch('/api/attendance', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newRecord)
   });
   if (!res.ok) throw new Error('Failed to check in');
@@ -61,9 +61,8 @@ export async function startBreak(userId: string): Promise<void> {
   const record = records.find(r => r.date === dateStr);
   
   if (record && record.id) {
-    await fetch(`/api/attendance/${record.id}`, {
+    await apiFetch(`/api/attendance/${record.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ breakStart: now.toISOString(), status: 'On Break' })
     });
   }
@@ -76,9 +75,8 @@ export async function endBreak(userId: string): Promise<void> {
   const record = records.find(r => r.date === dateStr);
   
   if (record && record.id) {
-    await fetch(`/api/attendance/${record.id}`, {
+    await apiFetch(`/api/attendance/${record.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ breakEnd: now.toISOString(), status: 'Working' })
     });
   }
@@ -94,9 +92,8 @@ export async function checkOut(userId: string): Promise<void> {
   const record = records.find(r => r.date === dateStr);
   
   if (record && record.id) {
-    await fetch(`/api/attendance/${record.id}`, {
+    await apiFetch(`/api/attendance/${record.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ checkOut: now.toISOString(), isEarlyOut, status: 'Checked Out' })
     });
   }
@@ -113,18 +110,16 @@ export async function submitSupportRequest(data: Partial<AttendanceSupportReques
     createdAt: new Date().toISOString()
   };
 
-  const res = await fetch('/api/support', {
+  const res = await apiFetch('/api/support', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newReq)
   });
   if (!res.ok) throw new Error('Failed to submit request');
 }
 
 export async function updateSupportRequest(id: string, status: 'Approved' | 'Rejected'): Promise<void> {
-  const res = await fetch(`/api/support/${id}`, {
+  const res = await apiFetch(`/api/support/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
   });
   if (!res.ok) throw new Error('Failed to update request');
@@ -132,7 +127,7 @@ export async function updateSupportRequest(id: string, status: 'Approved' | 'Rej
 
 export async function getSupportRequests(userId?: string): Promise<AttendanceSupportRequest[]> {
   const url = userId ? `/api/support?userId=${userId}` : '/api/support';
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error('Failed to fetch support requests');
   return res.json();
 }
