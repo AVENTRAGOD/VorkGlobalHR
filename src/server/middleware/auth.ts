@@ -9,7 +9,7 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'hr-pulse-secret-key-123';
+const JWT_SECRET = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET || 'hr-pulse-secret-key-123';
 
 /**
  * Middleware: Verifies Bearer JWT token on every protected route.

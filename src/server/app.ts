@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const JWT_SECRET = process.env.JWT_SECRET || 'hr-pulse-secret-key-123';
+const JWT_SECRET = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET || 'hr-pulse-secret-key-123';
 const JWT_EXPIRES_IN = '8h'; // Token valid for 8 hours (one work day)
 
 // ─────────────────────────────────────────────────────────────
@@ -159,8 +159,8 @@ app.post('/api/attendance', async (req, res) => {
   try {
     const record = await prisma.attendanceRecord.create({ data: req.body });
     res.json(record);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create attendance' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to create attendance', details: err?.message });
   }
 });
 
@@ -171,8 +171,8 @@ app.put('/api/attendance/:id', async (req, res) => {
       data: req.body
     });
     res.json(record);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update attendance' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update attendance', details: err?.message });
   }
 });
 
@@ -194,8 +194,8 @@ app.post('/api/leaves', async (req, res) => {
   try {
     const leave = await prisma.leaveRequest.create({ data: req.body });
     res.json(leave);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create leave' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to create leave', details: err?.message });
   }
 });
 
@@ -206,8 +206,8 @@ app.put('/api/leaves/:id', async (req, res) => {
       data: req.body
     });
     res.json(leave);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update leave' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update leave', details: err?.message });
   }
 });
 
@@ -215,8 +215,8 @@ app.delete('/api/leaves/:id', async (req, res) => {
   try {
     await prisma.leaveRequest.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete leave' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete leave', details: err?.message });
   }
 });
 
@@ -238,8 +238,8 @@ app.post('/api/payroll', async (req, res) => {
   try {
     const payroll = await prisma.payrollRecord.create({ data: req.body });
     res.json(payroll);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create payroll' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to create payroll', details: err?.message });
   }
 });
 
@@ -250,8 +250,8 @@ app.put('/api/payroll/:id', async (req, res) => {
       data: req.body
     });
     res.json(payroll);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update payroll' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update payroll', details: err?.message });
   }
 });
 
@@ -273,8 +273,8 @@ app.post('/api/support', async (req, res) => {
   try {
     const reqData = await prisma.attendanceSupportRequest.create({ data: req.body });
     res.json(reqData);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create support request' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to create support request', details: err?.message });
   }
 });
 
@@ -285,8 +285,8 @@ app.put('/api/support/:id', async (req, res) => {
       data: req.body
     });
     res.json(reqData);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update support request' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update support request', details: err?.message });
   }
 });
 
@@ -308,8 +308,8 @@ app.post('/api/tasks', async (req, res) => {
   try {
     const task = await prisma.task.create({ data: req.body });
     res.json(task);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create task' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to create task', details: err?.message });
   }
 });
 
@@ -320,8 +320,8 @@ app.put('/api/tasks/:id', async (req, res) => {
       data: req.body
     });
     res.json(task);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update task' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update task', details: err?.message });
   }
 });
 
@@ -329,18 +329,22 @@ app.delete('/api/tasks/:id', async (req, res) => {
   try {
     await prisma.task.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete task' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete task', details: err?.message });
   }
 });
 
 // --- Courses ---
 app.get('/api/courses', async (req, res) => {
   try {
-    const courses = await prisma.course.findMany({ orderBy: { createdAt: 'desc' } });
+    const { userId } = req.query;
+    const courses = await prisma.course.findMany({
+      where: userId ? { assignedTo: String(userId) } : undefined,
+      orderBy: { createdAt: 'desc' }
+    });
     res.json(courses);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch courses' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch courses', details: err?.message });
   }
 });
 
@@ -348,8 +352,8 @@ app.post('/api/courses', async (req, res) => {
   try {
     const course = await prisma.course.create({ data: req.body });
     res.json(course);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create course' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to create course', details: err?.message });
   }
 });
 
@@ -360,8 +364,8 @@ app.put('/api/courses/:id', async (req, res) => {
       data: req.body
     });
     res.json(course);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update course' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update course', details: err?.message });
   }
 });
 
@@ -369,8 +373,8 @@ app.delete('/api/courses/:id', async (req, res) => {
   try {
     await prisma.course.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete course' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete course', details: err?.message });
   }
 });
 
@@ -392,8 +396,8 @@ app.post('/api/advances', async (req, res) => {
   try {
     const advance = await prisma.advanceRequest.create({ data: req.body });
     res.json(advance);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create advance' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to create advance', details: err?.message });
   }
 });
 
@@ -404,8 +408,8 @@ app.put('/api/advances/:id', async (req, res) => {
       data: req.body
     });
     res.json(advance);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update advance' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update advance', details: err?.message });
   }
 });
 
@@ -413,8 +417,8 @@ app.delete('/api/advances/:id', async (req, res) => {
   try {
     await prisma.advanceRequest.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete advance' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete advance', details: err?.message });
   }
 });
 
@@ -436,8 +440,8 @@ app.post('/api/performance', async (req, res) => {
   try {
     const record = await prisma.performanceRecord.create({ data: req.body });
     res.json(record);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create performance' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to create performance', details: err?.message });
   }
 });
 
@@ -448,8 +452,8 @@ app.put('/api/performance/:id', async (req, res) => {
       data: req.body
     });
     res.json(record);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update performance' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update performance', details: err?.message });
   }
 });
 
@@ -457,8 +461,8 @@ app.delete('/api/performance/:id', async (req, res) => {
   try {
     await prisma.performanceRecord.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete performance' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete performance', details: err?.message });
   }
 });
 
