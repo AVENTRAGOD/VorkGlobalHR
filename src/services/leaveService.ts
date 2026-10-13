@@ -51,7 +51,7 @@ export async function submitLeave(leave: Partial<LeaveRequest>): Promise<void> {
   if (!res.ok) throw new Error('Failed to submit leave');
 }
 
-export async function updateLeaveStatus(id: string, status: 'Approved' | 'Rejected', adminId: string): Promise<void> {
+export async function updateLeaveStatus(id: string, status: 'Approved' | 'Rejected' | 'Cancelled', adminId: string): Promise<void> {
   const res = await apiFetch(`/api/leaves/${id}`, {
     method: 'PUT',
     body: JSON.stringify({ status, approvedBy: adminId })

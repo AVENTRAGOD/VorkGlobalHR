@@ -123,8 +123,10 @@ export const mockService = {
     const now = new Date();
     const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 0);
     
+    const user = mockService.getEmployees().find(e => e.uid === uid);
     mockService.saveAttendance({
       userId: uid,
+      userName: user ? user.name : 'Unknown',
       date: today,
       checkIn: now.toISOString(),
       isLate,

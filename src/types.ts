@@ -198,16 +198,29 @@ export interface PerformanceRecord {
   id: string;
   userId: string;
   userName: string;
-  evaluatorId: string;
-  evaluatorName: string;
+  evaluatorId?: string;
+  evaluatorName?: string;
+  evaluator?: string;
+  month?: number;
+  year?: number;
   score: number;
-  rating: number;
-  feedback: string;
+  rating?: number;
+  feedback?: string;
+  comments?: string;
   hrFeedback?: string;
   selfEvaluation?: string;
-  goals: string[];
-  status: 'Draft' | 'Completed' | 'Self-Evaluated';
+  goals?: string[];
+  metrics?: any;
+  status?: 'Draft' | 'Completed' | 'Self-Evaluated';
   createdAt: any;
+}
+
+export interface Qualification {
+  id: string;
+  userId: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
 }
 
 export type AdvanceStatus = 'Pending' | 'Approved' | 'Rejected';

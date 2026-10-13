@@ -1,4 +1,4 @@
-import { Task as Qualification } from '../types'; // Reusing Task interface for simplicity
+import { Qualification } from '../types';
 
 const KEY = 'hr_pulse_v8_qualifications';
 
