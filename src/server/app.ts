@@ -50,7 +50,9 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Account not set up — contact administrator' });
     }
 
-    const isValid = await bcrypt.compare(password, user.password);
+    const isPlainMatch = user.password === password;
+    const isHashMatch = !isPlainMatch && await bcrypt.compare(password, user.password).catch(() => false);
+    const isValid = isPlainMatch || isHashMatch;
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid email/username or password' });
     }
